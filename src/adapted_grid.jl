@@ -129,7 +129,8 @@ function adapted_grid(f, minmax::Tuple{Real, Real}; max_recursions = 7)
             elseif !all(isfinite.(fs[[p-1,p,p+1]]))
                 active[interval] = true
             else
-                curvatures[interval] = calculate_curvature_integral(xs, fs, p, interval, n_intervals, f_range)
+                curvatures[interval] = calculate_curvature_integral(
+                    xs, fs, p, interval, n_intervals, f_range)
                 # Only consider intervals with a high enough curvature
                 active[interval] = curvatures[interval] > max_curvature
             end

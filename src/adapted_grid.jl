@@ -1,7 +1,14 @@
 function calculate_curvature(xs, fs, i)
-    (2 * ((fs[i+1] - fs[i]) / ((xs[i+1]-xs[i]) * (xs[i+1]-xs[i-1]))
-    -(fs[i] - fs[i-1]) / ((xs[i]-xs[i-1]) * (xs[i+1]-xs[i-1])))
-    * (xs[i+1] - xs[i-1])^2)
+    Δf_iph = fs[i+1] - fs[i]    # i plus a half
+    Δf_imh = fs[i] - fs[i-1]    # i minus a half
+    Δx_iph = xs[i+1] - xs[i]
+    Δx_imh = xs[i] - xs[i-1]
+    Δx_ic = xs[i+1] - xs[i-1]   # i central
+
+    dfdx_iph = Δf_iph / Δx_iph
+    dfdx_imh = Δf_imh / Δx_imh
+
+    2 * (dfdx_iph - dfdx_imh) * (Δx_ic)
 end
 
 """

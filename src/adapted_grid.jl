@@ -27,6 +27,47 @@ function calculate_curvature_integral(xs, fs, p, interval, n_intervals, f_range)
     result /= tot_w
 end
 
+function calculate_refinement(
+    f, xs, fs, n_points, n_new_points, n_intervals, intervals_to_refine,
+    n_intervals_to_refine, n_tot_refinements)
+    # Do division of the intervals
+    new_xs = zeros(eltype(xs), n_points + n_new_points)
+    new_fs = zeros(eltype(fs), n_points + n_new_points)
+    new_tot_refinements = zeros(Int, n_intervals + n_intervals_to_refine)
+    k = 0
+    kk = 0
+    for i in 1:n_points
+        if iseven(i) # This is a point in an interval
+            interval = i ÷ 2
+            if interval in intervals_to_refine
+                kk += 1
+                new_tot_refinements[interval - 1 + kk] = n_tot_refinements[interval] + 1
+                new_tot_refinements[interval + kk] = n_tot_refinements[interval] + 1
+
+                k += 1
+                new_xs[i - 1 + k] = (xs[i] + xs[i-1]) / 2
+                new_fs[i - 1 + k] = f(new_xs[i-1 + k])
+
+                new_xs[i + k] = xs[i]
+                new_fs[i + k] = fs[i]
+
+                new_xs[i + 1 + k] = (xs[i+1] + xs[i]) / 2
+                new_fs[i + 1 + k] = f(new_xs[i + 1 + k])
+                k += 1
+            else
+                new_tot_refinements[interval + kk] = n_tot_refinements[interval]
+                new_xs[i + k] = xs[i]
+                new_fs[i + k] = fs[i]
+            end
+        else
+            new_xs[i + k] = xs[i]
+            new_fs[i + k] = fs[i]
+        end
+    end
+
+    return (new_xs, new_fs, new_tot_refinements)
+end
+
 """
     adapted_grid(f, minmax::Tuple{Number, Number}; max_recursions = 7)
 
@@ -112,40 +153,9 @@ function adapted_grid(f, minmax::Tuple{Real, Real}; max_recursions = 7)
         n_intervals_to_refine = length(intervals_to_refine)
         n_new_points = 2*length(intervals_to_refine)
 
-        # Do division of the intervals
-        new_xs = zeros(eltype(xs), n_points + n_new_points)
-        new_fs = zeros(eltype(fs), n_points + n_new_points)
-        new_tot_refinements = zeros(Int, n_intervals + n_intervals_to_refine)
-        k = 0
-        kk = 0
-        for i in 1:n_points
-            if iseven(i) # This is a point in an interval
-                interval = i ÷ 2
-                if interval in intervals_to_refine
-                    kk += 1
-                    new_tot_refinements[interval - 1 + kk] = n_tot_refinements[interval] + 1
-                    new_tot_refinements[interval + kk] = n_tot_refinements[interval] + 1
-
-                    k += 1
-                    new_xs[i - 1 + k] = (xs[i] + xs[i-1]) / 2
-                    new_fs[i - 1 + k] = f(new_xs[i-1 + k])
-
-                    new_xs[i + k] = xs[i]
-                    new_fs[i + k] = fs[i]
-
-                    new_xs[i + 1 + k] = (xs[i+1] + xs[i]) / 2
-                    new_fs[i + 1 + k] = f(new_xs[i + 1 + k])
-                    k += 1
-                else
-                    new_tot_refinements[interval + kk] = n_tot_refinements[interval]
-                    new_xs[i + k] = xs[i]
-                    new_fs[i + k] = fs[i]
-                end
-            else
-                new_xs[i + k] = xs[i]
-                new_fs[i + k] = fs[i]
-            end
-        end
+        (new_xs, new_fs, new_tot_refinements) = calculate_refinement(
+            f, xs, fs, n_points, n_new_points, n_intervals, intervals_to_refine, n_intervals_to_refine,
+            n_tot_refinements)
 
         xs = new_xs
         fs = new_fs

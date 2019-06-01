@@ -11,6 +11,22 @@ function calculate_curvature(xs, fs, i)
     2 * (dfdx_iph - dfdx_imh) * (Δx_ic)
 end
 
+function calculate_curvature_integral(xs, fs, p, interval, n_intervals, f_range)
+    tot_w = 0.0
+    result = 0.0
+    # Do a small convolution
+    for (q,w) in ((-1, 0.25), (0, 0.5), (1, 0.25))
+        interval == 1 && q == -1 && continue
+        interval == n_intervals && q == 1 && continue
+        tot_w += w
+        i = p + q
+        # Estimate integral of second derivative over interval, use that as a refinement indicator
+        # https://mathformeremortals.wordpress.com/2013/01/12/a-numerical-second-derivative-from-three-points/
+        result += abs(calculate_curvature(xs, fs, i)) / f_range * w
+    end
+    result /= tot_w
+end
+
 """
     adapted_grid(f, minmax::Tuple{Number, Number}; max_recursions = 7)
 
@@ -72,18 +88,7 @@ function adapted_grid(f, minmax::Tuple{Real, Real}; max_recursions = 7)
             elseif !all(isfinite.(fs[[p-1,p,p+1]]))
                 active[interval] = true
             else
-                tot_w = 0.0
-                # Do a small convolution
-                for (q,w) in ((-1, 0.25), (0, 0.5), (1, 0.25))
-                    interval == 1 && q == -1 && continue
-                    interval == n_intervals && q == 1 && continue
-                    tot_w += w
-                    i = p + q
-                    # Estimate integral of second derivative over interval, use that as a refinement indicator
-                    # https://mathformeremortals.wordpress.com/2013/01/12/a-numerical-second-derivative-from-three-points/
-                    curvatures[interval] += abs(calculate_curvature(xs, fs, i)) / f_range * w
-                end
-                curvatures[interval] /= tot_w
+                curvatures[interval] = calculate_curvature_integral(xs, fs, p, interval, n_intervals, f_range)
                 # Only consider intervals with a high enough curvature
                 active[interval] = curvatures[interval] > max_curvature
             end

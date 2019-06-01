@@ -27,9 +27,12 @@ function calculate_curvature_integral(xs, fs, p, interval, n_intervals, f_range)
     result /= tot_w
 end
 
-function calculate_refinement(
-    f, xs, fs, n_points, n_new_points, n_intervals, intervals_to_refine,
-    n_intervals_to_refine, n_tot_refinements)
+function calculate_refinement(f, xs, fs, n_intervals, intervals_to_refine, n_tot_refinements)
+    @assert length(xs) == length(fs)
+    n_points = length(xs)
+
+    n_intervals_to_refine = length(intervals_to_refine)
+    n_new_points = 2*n_intervals_to_refine
     # Do division of the intervals
     new_xs = zeros(eltype(xs), n_points + n_new_points)
     new_fs = zeros(eltype(fs), n_points + n_new_points)
@@ -151,17 +154,14 @@ function adapted_grid(f, minmax::Tuple{Real, Real}; max_recursions = 7)
         n_refinements = min(n_target_refinements, length(interval_candidates))
         perm = sortperm(curvatures[active])
         intervals_to_refine = sort(interval_candidates[perm[length(perm) - n_refinements + 1:end]])
-        n_intervals_to_refine = length(intervals_to_refine)
-        n_new_points = 2*length(intervals_to_refine)
 
         (new_xs, new_fs, new_tot_refinements) = calculate_refinement(
-            f, xs, fs, n_points, n_new_points, n_intervals, intervals_to_refine, n_intervals_to_refine,
-            n_tot_refinements)
+            f, xs, fs, n_intervals, intervals_to_refine, n_tot_refinements)
 
         xs = new_xs
         fs = new_fs
         n_tot_refinements = new_tot_refinements
-        n_points = n_points + n_new_points
+        n_points = length(xs)
         n_intervals = n_points ÷ 2
     end
 

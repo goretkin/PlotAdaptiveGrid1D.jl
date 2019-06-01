@@ -1,3 +1,8 @@
+function calculate_curvature(xs, fs, i)
+    (2 * ((fs[i+1] - fs[i]) / ((xs[i+1]-xs[i]) * (xs[i+1]-xs[i-1]))
+    -(fs[i] - fs[i-1]) / ((xs[i]-xs[i-1]) * (xs[i+1]-xs[i-1])))
+    * (xs[i+1] - xs[i-1])^2)
+end
 
 """
     adapted_grid(f, minmax::Tuple{Number, Number}; max_recursions = 7)
@@ -69,9 +74,7 @@ function adapted_grid(f, minmax::Tuple{Real, Real}; max_recursions = 7)
                     i = p + q
                     # Estimate integral of second derivative over interval, use that as a refinement indicator
                     # https://mathformeremortals.wordpress.com/2013/01/12/a-numerical-second-derivative-from-three-points/
-                    curvatures[interval] += abs(2 * ((fs[i+1] - fs[i]) / ((xs[i+1]-xs[i]) * (xs[i+1]-xs[i-1]))
-                                                    -(fs[i] - fs[i-1]) / ((xs[i]-xs[i-1]) * (xs[i+1]-xs[i-1])))
-                                                    * (xs[i+1] - xs[i-1])^2) / f_range * w
+                    curvatures[interval] += abs(calculate_curvature(xs, fs, i)) / f_range * w
                 end
                 curvatures[interval] /= tot_w
                 # Only consider intervals with a high enough curvature
